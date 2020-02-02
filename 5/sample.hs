@@ -2,10 +2,12 @@ module Sample where
 import           GHC.Base                      as GB
 import           Control.Monad.Trans.State
 import           Control.Monad.Trans.Class
+import           Control.Monad.Trans.Except
 import           Control.Monad
 import           Data.List
 import           Text.Printf
 -- import           System.Random
+import           System.Environment
 
 
 data Maybe' a = Nothing' | Just' a
@@ -131,4 +133,37 @@ forTest = do
     forM_ [1 .. 9 :: Int] $ \t -> do
       putStr $ printf "%2d\t" (s * t)
     putStrLn ""
+
+-------------------------------------------------------------------------
+-- 5.4
+
+safeDiv :: Int -> Int -> Either String Int
+safeDiv _ 0 = Left "error: division by zero"
+safeDiv x y = Right $ x `div` y
+
+calc :: Int -> Either String (Int, Int)
+calc n = do
+  x <- safeDiv 100 n
+  y <- safeDiv 200 (x - 1)
+  return (x, y)
+
+safeDiv' :: Int -> Int -> Except String Int
+safeDiv' x 0 = throwE $ "error: division by zero: " ++ show x ++ " / 0"
+safeDiv' x y = return $ x `div` y
+
+calc' :: Int -> Either String (Int, Int)
+calc' n = runExcept $ do
+  catchE
+    (do
+      x <- safeDiv' 100 n
+      y <- safeDiv' 200 (x - 1)
+      return (x, y)
+    )
+    (\s -> throwE $ s ++ " append hoge")
+
+alternativeTest1 :: Either String Int
+alternativeTest1 = runExcept $ throwE "hoge" <|> return 100
+
+alternativeTest2 :: Either String Int
+alternativeTest2 = runExcept $ throwE "hoge" <|> throwE " foo"
 
