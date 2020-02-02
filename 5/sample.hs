@@ -1,5 +1,10 @@
 module Sample where
 import           GHC.Base
+import           Control.Monad.Trans.State
+import           Control.Monad.Trans.Class
+import           Data.List
+import           System.Random
+
 
 data Maybe' a = Nothing' | Just' a
               deriving Show
@@ -37,8 +42,7 @@ instance Applicative Maybe' where
 
 -- class Applicative m => Monad (m :: * -> *) where
 --   (>>=) :: m a -> (a -> m b) -> m b
---   (>>) :: m a -> m b -> m b
---   return :: a -> m a
+--   (>>) :: m a -> m b -> m b return :: a -> m a
 --   fail :: String -> m a
 --   {-# MINIMAL (>>=) #-}
 instance Monad Maybe' where
@@ -75,4 +79,40 @@ getItem m c n = do
   items <- lookup c m
   price <- lookup n items
   return (c, n, price)
+
+-------------------------------------------------------------------------
+-- 5.1.2
+
+type Card = Int
+type Score = Int
+type Hand = [Card]
+type Stock = [Card]
+type Player = String
+
+drawCard :: Int -> State Stock Hand
+drawCard n = do
+  deck <- get
+  put $ drop n deck
+  return $ take n deck
+
+gameWithState :: State Stock [(Score, Hand, Player)]
+gameWithState = do
+  taro    <- drawCard 5
+  hanako  <- drawCard 5
+  takashi <- drawCard 5
+  yumi    <- drawCard 5
+  return
+    . reverse
+    . sort
+    $ [ (sum taro   , taro   , "Taro")
+      , (sum hanako , hanako , "Hanako")
+      , (sum takashi, takashi, "Takashi")
+      , (sum yumi   , yumi   , "Yumi")
+      ]
+
+game :: IO ()
+game = do
+  g <- newStdGen
+  let stock = take 20 $ randomRs (1, 50) g
+  print $ evalState gameWithState stock
 
