@@ -46,3 +46,33 @@ instance Monad Maybe' where
   Nothing' >>= _ = Nothing'
   Just' x  >>= f = f x
 
+
+-------------------------------------------------------------------------
+-- 5.1.2
+
+type Category = String
+type Name = String
+type Price = Integer
+type Menu = [(Category, [(Name, Price)])]
+type Item = (Category, Name, Price)
+
+menu :: Menu
+menu =
+  [ ("Foods" , [("Hamburger", 120), ("FrenchFries", 100)])
+  , ("Drinks", [("Cola", 80), ("Tea", 100)])
+  ]
+
+getItemWithoutMonad :: Menu -> Category -> Name -> Maybe Item
+getItemWithoutMonad m c n = case lookup c m of
+  Just items -> case lookup n items of
+    Just price -> Just (c, n, price)
+    _          -> Nothing
+  _ -> Nothing
+
+
+getItem :: Menu -> Category -> Name -> Maybe Item
+getItem m c n = do
+  items <- lookup c m
+  price <- lookup n items
+  return (c, n, price)
+
