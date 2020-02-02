@@ -8,7 +8,7 @@ import           Data.List
 import           Text.Printf
 -- import           System.Random
 import           System.Environment
-
+import           Control.Monad.Trans.Reader
 
 data Maybe' a = Nothing' | Just' a
               deriving Show
@@ -166,4 +166,71 @@ alternativeTest1 = runExcept $ throwE "hoge" <|> return 100
 
 alternativeTest2 :: Either String Int
 alternativeTest2 = runExcept $ throwE "hoge" <|> throwE " foo"
+
+-------------------------------------------------------------------------
+-- 5.5
+
+-- Readerモナドを実装してみる
+newtype Reader' r a = Reader' { runReader' :: r -> a }
+
+instance Monad (Reader' r) where
+  -- return :: a -> Reader r a
+  return x = Reader' $ \_ -> x
+  -- (>>=) :: Reader r a -> (a -> Reader r b) -> Reader r b
+  r >>= f = Reader'
+    $ \arg -> let a = runReader' r arg in let r2 = f a in runReader' r2 arg
+
+instance Applicative (Reader' r) where
+  -- pure :: a -> Reader' r a
+  pure = return
+
+  -- (<*>) :: Reader' r (a -> b) -> Reader' r a -> Reader' r b
+  readerF <*> readerArg = do
+    f   <- readerF
+    arg <- readerArg
+    return $ f arg
+
+instance Functor (Reader' r) where
+  -- fmap :: (a -> b) -> Reader' r a -> Reader' r b
+  fmap f r = do
+    a <- r
+    return $ f a
+
+ask' :: Reader' r r
+ask' = Reader' id
+
+local' :: (r -> r) -> Reader' r a -> Reader' r a
+local' f r = do
+  source <- ask'
+  let source' = f source
+  Reader' $ \_ -> runReader' r source'
+
+asks' :: (r -> a) -> Reader' r a
+asks' f = do
+  r <- ask'
+  Reader' $ \_ -> f r
+
+
+readRound :: Reader' Double Int
+readRound = round <$> ask'
+
+data PowerEnv = PowerEnv {powEnergy :: !Double, powSaveMode :: !Bool}
+              deriving Show
+
+consume :: Reader' PowerEnv Double
+consume = do
+  energy   <- asks' powEnergy
+  saveMode <- asks' powSaveMode
+  let result = if saveMode then energy / 10.0 else energy
+  return result
+
+testrun :: PowerEnv -> Double
+testrun env = flip runReader' env $ do
+  cons1      <- consume
+  cons2      <- consume
+  consOthers <- local' (\e -> e { powSaveMode = True }) $ do
+    cons3 <- consume
+    cons4 <- consume
+    return $ cons3 + cons4
+  return $ cons1 + cons2 + consOthers
 
