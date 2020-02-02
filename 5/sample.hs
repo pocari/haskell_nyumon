@@ -1,9 +1,11 @@
 module Sample where
-import           GHC.Base
+import           GHC.Base                      as GB
 import           Control.Monad.Trans.State
 import           Control.Monad.Trans.Class
+import           Control.Monad
 import           Data.List
-import           System.Random
+import           Text.Printf
+-- import           System.Random
 
 
 data Maybe' a = Nothing' | Just' a
@@ -110,9 +112,23 @@ gameWithState = do
       , (sum yumi   , yumi   , "Yumi")
       ]
 
-game :: IO ()
-game = do
-  g <- newStdGen
-  let stock = take 20 $ randomRs (1, 50) g
-  print $ evalState gameWithState stock
+-- game :: IO ()
+-- game = do
+--   g <- newStdGen
+--   let stock = take 20 $ randomRs (1, 50) g
+--   print $ evalState gameWithState stock
+
+-------------------------------------------------------------------------
+-- 5.2
+join' :: Monad m => m (m a) -> m a
+join' mma = do
+  ma <- mma
+  ma
+
+forTest :: IO ()
+forTest = do
+  forM_ [1 .. 9 :: Int] $ \s -> do
+    forM_ [1 .. 9 :: Int] $ \t -> do
+      putStr $ printf "%2d\t" (s * t)
+    putStrLn ""
 
