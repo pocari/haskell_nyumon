@@ -3,12 +3,16 @@ import           GHC.Base                      as GB
 import           Control.Monad.Trans.State
 import           Control.Monad.Trans.Class
 import           Control.Monad.Trans.Except
+import           Control.Monad.Trans
 import           Control.Monad
 import           Data.List
 import           Text.Printf
 -- import           System.Random
 import           System.Environment
 import           Control.Monad.Trans.Reader
+import           Control.Monad.ST
+import           Data.STRef
+import           Data.Array.ST
 
 data Maybe' a = Nothing' | Just' a
               deriving Show
@@ -234,3 +238,19 @@ testrun env = flip runReader' env $ do
     return $ cons3 + cons4
   return $ cons1 + cons2 + consOthers
 
+-------------------------------------------------------------------------
+-- 5.6
+
+procCount :: Integer
+procCount = runST $ do
+  n <- newSTRef 0
+  forM_ [1 .. 10] $ \i -> do
+    modifySTRef n (+ i)
+  readSTRef n
+
+doubleArray :: [Double]
+doubleArray = runST $ do
+  arr <- newListArray (0, 4) [1 .. 5] :: ST s (STUArray s Int Double)
+  x   <- readArray arr 2
+  writeArray arr 2 (x * 10.0)
+  getElems arr
