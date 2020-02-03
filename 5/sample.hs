@@ -4,6 +4,7 @@ import           Control.Monad.Trans.State
 import           Control.Monad.Trans.Class
 import           Control.Monad.Trans.Except
 import           Control.Monad.Trans
+import           Control.Monad.Trans.Maybe
 import           Control.Monad
 import           Data.List
 import           Text.Printf
@@ -254,3 +255,16 @@ doubleArray = runST $ do
   x   <- readArray arr 2
   writeArray arr 2 (x * 10.0)
   getElems arr
+
+-------------------------------------------------------------------------
+-- 5.8
+testMaybeT :: IO ()
+testMaybeT = do
+  maybeValue <- runMaybeT $ do
+    let env = lookupEnv "USER"
+    a <- lift env
+    case a of
+      (Just x) -> lift $ print $ "a is Just " ++ x
+      Nothing  -> lift $ print $ "a is Nothing"
+    MaybeT env
+  print maybeValue
