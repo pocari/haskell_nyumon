@@ -282,3 +282,59 @@ hoge :: IO ()
 hoge = do
   let st = return' (1 :: Int)
   print $ runState' st ()
+
+-- https://qiita.com/7shi/items/4408b76624067c17e933#%E7%B7%B4%E7%BF%92-1
+
+bind' :: (Monad m) => StateT s m a -> (a -> StateT s m b) -> StateT s m b
+bind' st f =
+  StateT
+    $ (\s -> let ma = runStateT st s in ma >>= (\(a, s') -> runStateT (f a) s')
+      )
+
+get' :: (Monad m) => StateT s m s
+get' = StateT $ (\s -> return (s, s))
+
+modify'' :: (Monad m) => (s -> s) -> StateT s m s
+modify'' f = StateT $ (\s -> return (s, f s))
+
+lift'' :: (Monad m) => m a -> StateT s m a
+lift'' m = StateT $ (\s -> m >>= (\a -> return (a, s)))
+
+hoge2 :: Int -> IO Int
+hoge2 x = (`execStateT` 1) $ forM_ [1 .. x] $ \i ->
+  modify'' (* i) `bind'` \_ ->
+    get `bind'` \v -> lift'' $ putStrLn $ "*" ++ show i ++ " -> " ++ show v
+
+mainHoge2 :: IO ()
+mainHoge2 = hoge2 5 >>= print
+
+hoge3 :: Int -> IO Int
+hoge3 x = (`execStateT` 1) $ do
+  forM_ [1 .. x] $ \i -> do
+    modify (* i)
+    v <- get
+    lift $ putStrLn $ "*" ++ show i ++ " -> " ++ show v
+
+mainHoge3 :: IO ()
+mainHoge3 = hoge3 5 >>= print
+
+-- StateT s m a -> s -> m (a, s)
+getch :: StateT String Maybe Char
+getch = StateT helper
+ where
+  helper :: [a] -> Maybe (a, [a])
+  helper (x : xs) = Just (x, xs)
+  helper _        = Nothing
+
+getch3 :: String -> Maybe String
+getch3 = evalStateT $ do
+  x1 <- getch
+  x2 <- getch
+  x3 <- getch
+  return [x1, x2, x3]
+
+mainHoge4 :: IO ()
+mainHoge4 = do
+  print $ getch3 "abcd"
+  print $ getch3 "123"
+  print $ getch3 "ab"
