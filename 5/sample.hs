@@ -6,6 +6,7 @@ import           Control.Monad.Trans.Except
 import           Control.Monad.Trans
 import           Control.Monad.Trans.Maybe
 import           Control.Monad
+import           Control.Monad.Identity
 import           Data.List
 import           Text.Printf
 -- import           System.Random
@@ -268,3 +269,16 @@ testMaybeT = do
       Nothing  -> lift $ print $ "a is Nothing"
     MaybeT env
   print maybeValue
+
+-- https://qiita.com/7shi/items/4408b76624067c17e933#%E5%9E%8B%E8%A1%A8%E8%A8%98
+
+return' :: a -> State s a
+return' x = StateT $ \s -> Identity (x, s)
+
+runState' :: State s a -> s -> (a, s)
+runState' st s = runIdentity $ runStateT st s
+
+hoge :: IO ()
+hoge = do
+  let st = return' (1 :: Int)
+  print $ runState' st ()
